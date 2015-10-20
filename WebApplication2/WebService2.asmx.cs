@@ -615,7 +615,7 @@ namespace WebApplication2
         public string string8;
         public int threadsig1 = 0;
         public int threadsig2 = 0;
-        public string root = "C:\\Users\\beenquiver\\Desktop\\";//文件保存的路径;
+        public string root = "E:\\files\\";//文件保存的路径;
         public finaljson aaa = new finaljson();
         [WebMethod]
         public bool downfile(string url)
@@ -681,8 +681,9 @@ namespace WebApplication2
                  Dictionary<string,object> h = new Dictionary<string,object>();
                  h.Add("tag",tsp_mark.Match(nowTable.Cell(1, 2).Range.Text.Trim()).Groups[1].Value);
                  for (int rowPos = 1; rowPos <= nowTable.Rows.Count; rowPos++)
-                 {  //还要把中文给去掉
+                 {  //还要把中文给去掉,以及纵向合并的单元格
 
+                     
                      string flag = Regex.Match(nowTable.Rows[rowPos].Cells[1].Range.Text.Trim().ToLower().Replace("\r", "").Replace("\u0007", ""), @"[\u4e00-\u9fa5\/]*(.*)?", RegexOptions.IgnoreCase).Groups[1].Value;//,@"\w",RegexOptions.IgnoreCase).Groups[0].Value.Trim();
                      string[] flags=flag.Split(new char[] {' '});
                      flag=string.Join(" ",flags);
@@ -710,10 +711,11 @@ namespace WebApplication2
                          for(int i=1;i<=nowTable.Rows[rowPos].Cells.Count;i++){
 
                              Match temp = Regex.Match(nowTable.Rows[rowPos].Cells[i].Range.Text.Trim().Replace("\r", "").Replace("\u0007", ""), @"[\u4e00-\u9fa5\/]*(.*)?", RegexOptions.IgnoreCase);
-                             column_name[i] = temp.Groups[1].Value;// +temp[1].Value + nowTable.Rows[rowPos].Cells[i].Range.Text.Trim();
+                             column_name[i] = temp.Groups[1].Value.ToLower();// +temp[1].Value + nowTable.Rows[rowPos].Cells[i].Range.Text.Trim();
                              
                          }
-                           Dictionary<string,string> tc_step = null; //h["tc_step"] = null;
+                             column_name[1]="num";
+                            h["test steps"] = null;
                       //往下收集列即可
                            int k = 0;
                          for(int start=rowPos+1;start<nowTable.Rows.Count;start++){
@@ -721,17 +723,19 @@ namespace WebApplication2
                              if(nowTable.Rows[start].Cells.Count!=num){
                                 rowPos=start-1;break;
                              }
-                            tc_step = new Dictionary<string, string>();
-                            for(int j=1;j<=num;j++){
+                           Dictionary<string,string>   tc_step = new Dictionary<string, string>();
+                              int j;
+                             for(j=1;j<=num;j++){
 
                                 tc_step.Add(column_name[j], nowTable.Rows[start].Cells[j].Range.Text.Trim().Replace("\r", "").Replace("\u0007", ""));
                                 
 
                             }
-                            
-                             h.Add("num_"+String.Format("{0}", k++), tc_step);
+                             h["test steps"]+=(new JavaScriptSerializer().Serialize(tc_step))+",";
+                              
 
                          }//处理tc_step
+                          h["test steps"]="["+h["test steps"].ToString().Substring(0, h["test steps"].ToString().Length-1)+"]";
                      }//else if 
                  }//for row
 
@@ -781,7 +785,7 @@ namespace WebApplication2
                 fs.Close();
             }
             catch { }
-            if (!File.Exists(LocalPath)) { return "{code:0,msg:保存文件失败！}";  }
+            if (!File.Exists(LocalPath)) { return "{code:0,msg:保存文件失败！=>"+doc_url+"}";  }
           
             in_column = column;
             //WORD  中数据都规整为一个空格隔开来
@@ -901,10 +905,11 @@ namespace WebApplication2
              
                 
                 var json = new JavaScriptSerializer().Serialize(aaa.finalstrings);
+                return  json;
                 Context.Response.ContentType = "text/json";
                 Context.Response.Write(json);
                 Context.Response.End();
-                return  json;
+               
                 GC.Collect();
                 GC.Collect();
 
