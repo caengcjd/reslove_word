@@ -20,7 +20,9 @@ using System.Web.UI.WebControls.WebParts;
 using System.Web.UI.HtmlControls;
 using Microsoft.Office.Interop.Word;
 using System.Net;
-
+using System.Diagnostics;
+using System.Management.Instrumentation;
+using System.Management;
 
 namespace WebApplication2
 {
@@ -34,53 +36,71 @@ namespace WebApplication2
     // [System.Web.Script.Services.ScriptService]
     public class WebService2 : System.Web.Services.WebService
     {
-
-        public class hahabaseobject
+        /*
+        class Dictionary : IEquatable<Dictionary>
         {
-            public string title;
-            public string description;
-            public ArrayList Source = new ArrayList();
-            public string othercontext;
-            public string Implement;
-            public string Priority;
-            public string Contribution;
-            public string Category;
-            public string Allocation;
-            public string sources;
+            public bool Equals(Dictionary other)
+            {
+                return this.tag == other.tag;
+            }
 
-        }
-        public class step123
-        {
-            public int num;
-            public string actions;
-            public string expected_result;
-            public string indata;
-            public string test_step;
+         }
+         * */
+        _Application app = new Microsoft.Office.Interop.Word.Application();
+        public _Document doc;
+        public _Document doc1;
+        public _Document doc2;
+        public _Document doc3;
+        public _Document doc4;
+        public _Document doc5;
+        public _Document doc6;
+        public _Document doc7;
+        public string in_column;
+        //各自的map体，互相独立开来
 
-        }
-        public class tctable
-        {
-            public string tag;
-            public string description;
-            public string test_item;
-            public string test_method;
-            public string pre_condition;
-            public string result;
-            public string comment;
-            public ArrayList steps = new ArrayList();
-            public ArrayList source = new ArrayList();
+        public static ManagementObjectCollection mn = (new ManagementClass("Win32_Processor")).GetInstances();
 
-            public string input;
-            public string exec_step;
-            public string exp_step;
-            //public ArrayList actions = new ArrayList();
-            //public ArrayList epr = new ArrayList();
-        }
+        public Dictionary<string, string>[] map = new Dictionary<string, string>[25];
+        public Dictionary<string, object>[] h = new Dictionary<string, object>[25];
+        public static int doc_handler = 8;//总句柄
+        public static int slice = 16;//线程数目
+        int key_line = 25;//最大rs记录的block块长
+        _Document[] docs_list = new _Document[25];
+        _Application[] apps_list = new Microsoft.Office.Interop.Word.Application[25];
+        public Dictionary<string, string> map1;
+        public Dictionary<string, string> map2;
+        Dictionary<string, string> map3;
+        Dictionary<string, string> map4;
+        Dictionary<string, string> map5;
+        Dictionary<string, string> map6;
+        Dictionary<string, string> map7;
+        Dictionary<string, string> map8;
+        Dictionary<string, object> h1;
+        Dictionary<string, object> h2;
+        Dictionary<string, object> h3;
+        Dictionary<string, object> h4;
+        Dictionary<string, object> h5;
+        Dictionary<string, object> h6;
+        Dictionary<string, object> h7;
+        Dictionary<string, object> h8;
+        public int pcount;
+        public int tc_count;
+        public string[] columns;
+        public string root = "D:\\files\\words\\";//文件保存的路径;
+        //public string root = "E:\\files\\";
+
+
+
         public class finaljson
         {
-            public ArrayList finalstrings = new ArrayList();
 
+            //估计有上锁机制,导致会吧inman
+            public List<Dictionary<string, string>> finalstrings = new List<Dictionary<string, string>>();
+            //  public  List<Dictionary<string, string>> [] finals = new List<Dictionary<string, string>> [25];
+            public List<Dictionary<string, object>> final_tc = new List<Dictionary<string, object>>();
         }
+        public finaljson aaa = new finaljson();
+
         public class JsonTools
         {
             // 从一个对象信息生成Json串
@@ -161,53 +181,73 @@ namespace WebApplication2
             }
             catch { }
             docdelet_tables.Close(ref unknow, ref unknow, ref unknow);
-
             appdelet_tables.Quit(ref unknow, ref unknow, ref unknow);
             return null;
         }
-       
-        public void thread1()
-        {
-            string temp = null;
-            int start = 1;
-            int end = pcount ;
 
-            Dictionary<string, string> map1=null;
+        public void thread1(Document doc, int start, int end)//,ref List<Dictionary<string, string>> finalstrings)
+        {
+
+
+            string temp = null;
+            // int start = 1;
+            //int end = pcount;
+
+            if (start <= 0) start = 1;
+            if (end >= pcount) end = pcount;
+            Dictionary<string, string> map = null;
+            //  finalstrings=new List<Dictionary<string,string>>();
+            Debug.WriteLine("inside {0}=>{1},{2}", doc.GetHashCode(), start, end);
             while (start <= end)
             {
 
+
+
                 temp = doc.Paragraphs[start].Range.Text.Trim();
-                if (Regex.Matches(temp, @"(^\[TSP-.*?-\d*?\]$)", RegexOptions.IgnoreCase).Count > 0) {
-                     map1 = new Dictionary<string, string>(); map1.Add("tag", temp);
-                }
-                if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
+
+
+                if (map == null && Regex.Matches(temp, @"(^\[TSP[^\]]*?\]$)", RegexOptions.IgnoreCase).Count > 0)
                 {
-
-
-                    //大小写的问题尚未解决呢
-
-                    Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
-                    // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
-                    if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
+                    map = new Dictionary<string, string>(); map.Add("tag", temp);
+                }
+                else if (map != null)
+                {
+                    if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
                     {
 
-                       map1.Add(mark.Groups[1].ToString().Trim(), mark.Groups[2].Value.Trim());
+
+                        //大小写的问题尚未解决呢
+
+                        Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
+                        // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
+                        if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
+                        {
+
+                            map.Add(mark.Groups[1].ToString().Trim(), mark.Groups[2].Value.Trim());
+
+                        }
 
                     }
+                    else if (Regex.Matches(temp, @"^\[End\]$", RegexOptions.IgnoreCase).Count > 0)
+                    {
+                        if (!aaa.finalstrings.Contains(map))
+                        {
+                            aaa.finalstrings.Add(map);
+                            map = null;
+                        }//销毁对象}
+                    }
+                    else
+                    {
+                        //description字段哦,如果用户没有输入
+                        if (in_column.Contains("description"))
+                        {
+                            if (map.ContainsKey("description")) { map["description"] += temp; }//1/(11):(map1.Add("description",temp));
+                            else { map.Add("description", temp); }
+                        }
+                    }
 
-                }
-                else if (Regex.Matches(temp, @"^\[End\]$", RegexOptions.IgnoreCase).Count > 0)
-                {
-                    aaa.finalstrings.Add(map1);
-                }
-                else
-                {
-
-
-
-                }
-
-
+                }//else map1==null
+                else { }
                 start++;
 
 
@@ -217,537 +257,166 @@ namespace WebApplication2
 
 
             }//while
+
+
+
         }//thread1
 
 
-        public void thread2()
-        {
-            int arraycount = 0;
-            string temp = null;
-            string tempf = null;
-            int start = pcount / 8 + 1;
-            int end = pcount * 2 / 8;
-           
-            while (start <= end)
-            {
-
-                temp = doc.Paragraphs[start].Range.Text.Trim();
-                if (Regex.Matches(temp, @"(^\[TSP-.*?-\d*?\]$)", RegexOptions.IgnoreCase).Count > 0) { map2 = new Dictionary<string, string>(); map2.Add("tag", temp); }
-                else if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
-                {
-
-
-                    //大小写的问题尚未解决呢
-
-                    Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
-                    // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
-                    if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
-                    {
-
-                        map2.Add(mark.Groups[1].ToString().Trim(), mark.Groups[2].Value.Trim());
-
-                    }
-
-                }
-                else if (Regex.Matches(temp, @"^\[End\]$", RegexOptions.IgnoreCase).Count > 0)
-                {
-                    aaa.finalstrings.Add(map2);
-                }
-                else
-                {
-
-
-
-                }
-
-
-                start++;
-
-
-
-
-
-
-
-            }//while
-            }
-         
-        public void thread3()
-        {
-            int arraycount = 0;
-            string temp = null;
-            string tempf = null;
-            int start = pcount * 2 / 8 + 1;
-            int end = pcount * 3 / 8;
-
-            while (start <= end)
-            {
-
-                temp = doc.Paragraphs[start].Range.Text.Trim();
-                if (Regex.Matches(temp, @"(^\[TSP-.*?-\d*?\]$)", RegexOptions.IgnoreCase).Count > 0) { map3 = new Dictionary<string, string>(); map3.Add("tag", temp); }
-                else if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
-                {
-
-
-                    //大小写的问题尚未解决呢
-
-                    Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
-                    // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
-                    if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
-                    {
-
-                        map3.Add(mark.Groups[1].ToString().Trim(), mark.Groups[2].Value.Trim());
-
-                    }
-
-                }
-                else if (Regex.Matches(temp, @"^\[End\]$", RegexOptions.IgnoreCase).Count > 0)
-                {
-                    aaa.finalstrings.Add(map3);
-                }
-                else
-                {
-
-
-
-                }
-
-
-                start++;
-
-
-
-
-
-
-
-            }//while
-        }
-        public void thread4()
-        {
-            int arraycount = 0;
-            string temp = null;
-            string tempf = null;
-            int start = pcount * 3 / 8 + 1;
-            int end = pcount * 4 / 8;
-
-            while (start <= end)
-            {
-
-                temp = doc.Paragraphs[start].Range.Text.Trim();
-                if (Regex.Matches(temp, @"(^\[TSP-.*?-\d*?\]$)", RegexOptions.IgnoreCase).Count > 0) { map4 = new Dictionary<string, string>(); map4.Add("tag", temp); }
-                else if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
-                {
-
-
-                    //大小写的问题尚未解决呢
-
-                    Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
-                    // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
-                    if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
-                    {
-
-                        map4.Add(mark.Groups[1].ToString().Trim(), mark.Groups[2].Value.Trim());
-
-                    }
-
-                }
-                else if (Regex.Matches(temp, @"^\[End\]$", RegexOptions.IgnoreCase).Count > 0)
-                {
-                    aaa.finalstrings.Add(map4);
-                }
-                else
-                {
-
-
-
-                }
-
-
-                start++;
-
-
-
-
-
-
-
-            }//while
-        }
-        public void thread5()
-        {
-            int arraycount = 0;
-            string temp = null;
-            string tempf = null;
-            int start = pcount * 4 / 8 + 1;
-            int end = pcount * 5 / 8;
-
-            while (start <= end)
-            {
-
-                temp = doc.Paragraphs[start].Range.Text.Trim();
-                if (Regex.Matches(temp, @"(^\[TSP-.*?-\d*?\]$)", RegexOptions.IgnoreCase).Count > 0) { map5 = new Dictionary<string, string>(); map5.Add("tag", temp); }
-                else if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
-                {
-
-
-                    //大小写的问题尚未解决呢
-
-                    Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
-                    // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
-                    if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
-                    {
-
-                        map5.Add(mark.Groups[1].ToString().Trim(), mark.Groups[2].Value.Trim());
-
-                    }
-
-                }
-                else if (Regex.Matches(temp, @"^\[End\]$", RegexOptions.IgnoreCase).Count > 0)
-                {
-                    aaa.finalstrings.Add(map5);
-                }
-                else
-                {
-
-
-
-                }
-
-
-                start++;
-
-
-
-
-
-
-
-            }//while
-        }
-        public void thread6()
-        {
-            int arraycount = 0;
-            string temp = null;
-            string tempf = null;
-            int start = pcount * 5 / 8 + 1;
-            int end = pcount * 6 / 8;
-
-            while (start <= end)
-            {
-
-                temp = doc.Paragraphs[start].Range.Text.Trim();
-                if (Regex.Matches(temp, @"(^\[TSP-.*?-\d*?\]$)", RegexOptions.IgnoreCase).Count > 0) { map6 = new Dictionary<string, string>(); map6.Add("tag", temp); }
-                else if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
-                {
-
-
-                    //大小写的问题尚未解决呢
-
-                    Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
-                    // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
-                    if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
-                    {
-
-                        map6.Add(mark.Groups[1].ToString().Trim(), mark.Groups[2].Value.Trim());
-
-                    }
-
-                }
-                else if (Regex.Matches(temp, @"^\[End\]$", RegexOptions.IgnoreCase).Count > 0)
-                {
-                    aaa.finalstrings.Add(map6);
-                }
-                else
-                {
-
-
-
-                }
-
-
-                start++;
-
-
-
-
-
-
-
-            }//while
-        }
-        public void thread7()
-        {
-            int arraycount = 0;
-            string temp = null;
-            string tempf = null;
-            int start = pcount * 6 / 8 + 1;
-            int end = pcount * 7 / 8;
-
-            while (start <= end)
-            {
-
-                temp = doc.Paragraphs[start].Range.Text.Trim();
-                if (Regex.Matches(temp, @"(^\[TSP-.*?-\d*?\]$)", RegexOptions.IgnoreCase).Count > 0) { map7 = new Dictionary<string, string>(); map7.Add("tag", temp); }
-                else if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
-                {
-
-
-                    //大小写的问题尚未解决呢
-
-                    Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
-                    // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
-                    if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
-                    {
-
-                        map7.Add(mark.Groups[1].ToString().Trim(), mark.Groups[2].Value.Trim());
-
-                    }
-
-                }
-                else if (Regex.Matches(temp, @"^\[End\]$", RegexOptions.IgnoreCase).Count > 0)
-                {
-                    aaa.finalstrings.Add(map7);
-                }
-                else
-                {
-
-
-
-                }
-
-
-                start++;
-
-
-
-
-
-
-
-            }//while
-        }
-        public void thread8()
-        {
-            int arraycount = 0;
-            string temp = null;
-            string tempf = null;
-            int start = pcount * 7 / 8 + 1;
-            int end = pcount;
-           
-            while (start <= end)
-            {
-
-                temp = doc.Paragraphs[start].Range.Text.Trim();
-                if (Regex.Matches(temp, @"(^\[TSP-.*?-\d*?\]$)", RegexOptions.IgnoreCase).Count > 0) { map8 = new Dictionary<string, string>(); map8.Add("tag", temp); }
-                else if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
-                {
-
-
-                    //大小写的问题尚未解决呢
-
-                    Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
-                    // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
-                    if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
-                    {
-
-                        map8.Add(mark.Groups[1].ToString().Trim(), mark.Groups[2].Value.Trim());
-
-                    }
-
-                }
-                else if (Regex.Matches(temp, @"^\[End\]$", RegexOptions.IgnoreCase).Count > 0)
-                {
-                    aaa.finalstrings.Add(map8);
-                }
-                else
-                {
-
-
-
-                }
-
-
-                start++;
-
-
-
-
-
-
-
-            }//while
-
-           
-        }//多线程并行处理
-        public _Document doc;
-        public _Document doc1;
-        public _Document doc2;
-        public _Document doc3;
-        public _Document doc4;
-        public _Document doc5;
-        public _Document doc6;
-        public _Document doc7;
-        public string in_column;
-        Dictionary<string, string> map2;
-        Dictionary<string, string> map3;
-        Dictionary<string, string> map4;
-        Dictionary<string, string> map5;
-        Dictionary<string, string> map6;
-        Dictionary<string, string> map7;
-        Dictionary<string, string> map8;
-        
-        public string pattern1;
-        public string pattern2;
-        public string pattern3;
-        public string pattern4;
-        public string type1;
-        public string type2;
-        public int pcount;
-        string[] columns;
-        public string string1;
-        public string string2;
-        public string string3;
-        public string string4;
-        public string string5;
-        public string string6;
-        public string string7;
-        public string string8;
-        public int threadsig1 = 0;
-        public int threadsig2 = 0;
-        public string root = "E:\\files\\";//文件保存的路径;
-        public finaljson aaa = new finaljson();
         [WebMethod]
-        public bool downfile(string url)
+        public string downfile(string doc_url)
         {
-            try
+
+            string LocalPath = root + doc_url.Substring(doc_url.LastIndexOf('/'));
+            FileStream fs = null;
+            Stream sIn = null;
+            HttpWebResponse wr = null;
+            Uri u = new Uri(doc_url);
+
+            HttpWebRequest mRequest = (HttpWebRequest)WebRequest.Create(u);
+            mRequest.Method = "GET";
+            mRequest.ContentType = "application/x-www-form-urlencoded";
+            wr = (HttpWebResponse)mRequest.GetResponse();
+            sIn = wr.GetResponseStream();
+            fs = new FileStream(LocalPath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            byte[] bytes = new byte[4096];
+            int start = 0;
+            int length;
+            while ((length = sIn.Read(bytes, 0, 4096)) > 0)
             {
-                //return false;
+                fs.Write(bytes, 0, length);
+                start += length;
+            }
 
-                int poseuqlurl = url.IndexOf('=');
-                string url1;
-                url1 = url.Substring(poseuqlurl + 1, url.Length - poseuqlurl - 1);
-                Uri u = new Uri(url1);
-                string filename = DateTime.Now.ToString() + ".doc";
-                string LocalPath = "D:\\" + filename;
-                HttpWebRequest mRequest = (HttpWebRequest)WebRequest.Create(u);
-                mRequest.Method = "GET";
-                mRequest.ContentType = "application/x-www-form-urlencoded";
-                HttpWebResponse wr = (HttpWebResponse)mRequest.GetResponse();
-                Stream sIn = wr.GetResponseStream();
-                FileStream fs = new FileStream(LocalPath, FileMode.Create, FileAccess.Write);
-                //BinaryWriter brnew = new BinaryWriter(fs);
-                //brnew.Write(bytContent, 0, bytContent.Length);
-                byte[] bytes = new byte[4096];
 
-                int start = 0;
 
-                int length;
+            if (sIn != null) sIn.Close();
+            if (wr != null) wr.Close();
+            if (fs != null) fs.Close();
 
-                while ((length = sIn.Read(bytes, 0, 4096)) > 0)
+            return LocalPath;
+
+        }
+
+        [WebMethod(Description = "readtc_void")]
+        public void readtc(Document doc, int start_line, int end_line)
+        {
+
+
+
+            start_line = start_line <= 0 ? 1 : start_line;
+            end_line = end_line >= pcount ? pcount : end_line;
+            Debug.WriteLine("inside {0}=>{1},{2}", doc, start_line, end_line);
+            Microsoft.Office.Interop.Word.Table nowTable;
+            Dictionary<string, object> h = null;
+            for (int tablePos = start_line; tablePos <= end_line; tablePos++)
+            {
+                nowTable = doc.Tables[tablePos];
+                Regex tsp_mark = new Regex(@"^(\[TSP-.*?-\d*?[^\r\n]*).*?");
+                if (!tsp_mark.Match(nowTable.Cell(1, 2).Range.Text.Trim()).Success)
                 {
-
-                    fs.Write(bytes, 0, length);
-
-                    start += length;
+                    // aaa.finalstrings.Add(nowTable.Cell(1, 2).Range.Text.Trim());
+                    continue;
 
                 }
-                sIn.Close();
-                wr.Close();
-                fs.Close();
-                return true;
-            }
-            catch { return false; }
-        }
-       
-        [WebMethod(Description = "readtc_void")]
-        public void readtc()
-        {
-            Microsoft.Office.Interop.Word.Table nowTable;
-            //建模已经完成啦嘎嘎
-            int end=doc.Tables.Count;
-
-            for (int tablePos = 1; tablePos <= end; tablePos++)
-            {
-                 nowTable= doc.Tables[tablePos];
-                 Regex  tsp_mark = new Regex(@"^(\[TSP-.*?-\d*?\]).*?");
-                 if (!tsp_mark.Match(nowTable.Cell(1, 2).Range.Text.Trim()).Success)
-                 {
-                    // aaa.finalstrings.Add(nowTable.Cell(1, 2).Range.Text.Trim());
-                     continue;
-
-                 }
                 // aaa.finalstrings.Add(columns.ToString());
-                 Dictionary<string,object> h = new Dictionary<string,object>();
-                 h.Add("tag",tsp_mark.Match(nowTable.Cell(1, 2).Range.Text.Trim()).Groups[1].Value);
-                 for (int rowPos = 1; rowPos <= nowTable.Rows.Count; rowPos++)
-                 {  //还要把中文给去掉,以及纵向合并的单元格
-
-                     
-                     string flag = Regex.Match(nowTable.Rows[rowPos].Cells[1].Range.Text.Trim().ToLower().Replace("\r", "").Replace("\u0007", ""), @"[\u4e00-\u9fa5\/]*(.*)?", RegexOptions.IgnoreCase).Groups[1].Value;//,@"\w",RegexOptions.IgnoreCase).Groups[0].Value.Trim();
-                     string[] flags=flag.Split(new char[] {' '});
-                     flag=string.Join(" ",flags);
-                  //   aaa.finalstrings.Add(flag);
-                     bool mark = false ;
-                     foreach (string a in columns)
-                     {
-                        if(a.ToLower().Trim()==flag){mark=true;break;}
-                         
-                     }
-
-                     //aaa.finalstrings.Add(flag);
-                   
-                     if(mark&&nowTable.Rows[rowPos].Cells.Count==2){
-                       //  aaa.finalstrings.Add(flag + "haha here" + nowTable.Rows[rowPos].Cells[1].Range.Text.Trim().Replace("\r", "").Replace("\u0007", ""));
-                         h.Add(flag,nowTable.Rows[rowPos].Cells[2].Range.Text.Trim().Replace("\r","").Replace("\u0007",""));
+                h = new Dictionary<string, object>();
+                h.Add("tag", tsp_mark.Match(nowTable.Cell(1, 2).Range.Text.Trim()).Groups[1].Value);
+                for (int rowPos = 1; rowPos <= nowTable.Rows.Count; rowPos++)
+                {  //还要把中文给去掉,以及纵向合并的单元格
 
 
-                     }else if(mark&&nowTable.Rows[rowPos].Cells.Count>2){
-                         //处理tc_test的情况了的
-                         //收集列名字
-                      //   aaa.finalstrings.Add(flag + "tc_step here" + in_column.Trim());
-                          int num=nowTable.Rows[rowPos].Cells.Count;
-                         string [] column_name=new string[num+1];
-                         for(int i=1;i<=nowTable.Rows[rowPos].Cells.Count;i++){
+                    string flag = Regex.Match(nowTable.Rows[rowPos].Cells[1].Range.Text.Trim().ToLower().Replace("\r", "").Replace("\u0007", ""), @"[\u4e00-\u9fa5\/]*(.*)?", RegexOptions.IgnoreCase).Groups[1].Value;//,@"\w",RegexOptions.IgnoreCase).Groups[0].Value.Trim();
+                    string[] flags = flag.Split(new char[] { ' ' });
+                    flag = string.Join(" ", flags);
+                    //   aaa.finalstrings.Add(flag);
+                    bool mark = false;
+                    foreach (string a in columns)
+                    {
+                        if (a.ToLower().Trim() == flag) { mark = true; break; }
 
-                             Match temp = Regex.Match(nowTable.Rows[rowPos].Cells[i].Range.Text.Trim().Replace("\r", "").Replace("\u0007", ""), @"[\u4e00-\u9fa5\/]*(.*)?", RegexOptions.IgnoreCase);
-                             column_name[i] = temp.Groups[1].Value.ToLower();// +temp[1].Value + nowTable.Rows[rowPos].Cells[i].Range.Text.Trim();
-                             
-                         }
-                             column_name[1]="num";
-                            h["test steps"] = null;
-                      //往下收集列即可
-                           int k = 0;
-                         for(int start=rowPos+1;start<nowTable.Rows.Count;start++){
+                    }
 
-                             if(nowTable.Rows[start].Cells.Count!=num){
-                                rowPos=start-1;break;
-                             }
-                           Dictionary<string,string>   tc_step = new Dictionary<string, string>();
-                              int j;
-                             for(j=1;j<=num;j++){
+                    //aaa.finalstrings.Add(flag);
+
+                    if (mark && nowTable.Rows[rowPos].Cells.Count == 2)
+                    {
+
+                        string text = nowTable.Rows[rowPos].Cells[2].Range.Text.Trim().Replace("\r", "").Replace("\u0007", "");
+                        //  aaa.finalstrings.Add(flag + "haha here" + nowTable.Rows[rowPos].Cells[1].Range.Text.Trim().Replace("\r", "").Replace("\u0007", ""));
+                        if (rowPos != 1) { h.Add(flag, text); continue; }
+                        //此时要解析出description,source,safety
+                        h.Add("Source", null);
+                        MatchCollection matches = Regex.Matches(text, @"\[Source:([^\]]*?\])\]", RegexOptions.IgnoreCase);
+                        foreach (Match match in matches)
+                        {
+                            GroupCollection groups = match.Groups;
+                            h["Source"] = h.ContainsKey("Source") ? (h["Source"] += (groups[1].ToString() + ",")) : null;
+
+                            // h.Add((i++).ToString(), groups[1].Value);
+                        }
+
+                        if (h["Source"] != null) h["Source"] = h["Source"].ToString().Substring(0, h["Source"].ToString().Length - 1);
+                        Match match_safety = Regex.Match(text, @"\[Safety:([^\]]*?)\]", RegexOptions.IgnoreCase);
+                        if (match_safety.Success) h.Add("Safety", match_safety.Groups[1].Value);
+                        Match match_desc = Regex.Match(text, @"\]([^\[\]]*)\[", RegexOptions.IgnoreCase);
+                        if (match_desc.Success) { h.Add(flag, match_desc.Groups[1].Value); }
+
+
+                    }
+                    else if (mark && nowTable.Rows[rowPos].Cells.Count > 2)
+                    {
+                        //处理tc_test的情况了的
+                        //收集列名字
+                        //   aaa.finalstrings.Add(flag + "tc_step here" + in_column.Trim());
+                        int num = nowTable.Rows[rowPos].Cells.Count;
+                        string[] column_name = new string[num + 1];
+
+                        for (int i = 1; i <= nowTable.Rows[rowPos].Cells.Count; i++)
+                        {
+
+                            Match temp = Regex.Match(nowTable.Rows[rowPos].Cells[i].Range.Text.Trim().Replace("\r", "").Replace("\u0007", ""), @"[\u4e00-\u9fa5\/]*(.*)?", RegexOptions.IgnoreCase);
+                            column_name[i] = temp.Groups[1].Value.ToLower();// +nowTable.Rows[rowPos].Cells[i].Range.Text.Trim();
+
+                        }
+                        column_name[0] = nowTable.Rows[rowPos].Range.Text.ToString();
+
+                        Console.WriteLine(nowTable.Rows[rowPos].Cells[num].Range.Text);
+                        //  column_name[1]="num";
+                        h["test steps"] = null;
+                        //往下收集列即可
+                        int k = 0;
+                        for (int start = rowPos + 1; start < nowTable.Rows.Count; start++)
+                        {
+
+                            if (nowTable.Rows[start].Cells.Count != num)
+                            {
+                                rowPos = start - 1; break;
+                            }
+                            Dictionary<string, string> tc_step = new Dictionary<string, string>();
+                            int j;
+                            for (j = 1; j <= num; j++)
+                            {
 
                                 tc_step.Add(column_name[j], nowTable.Rows[start].Cells[j].Range.Text.Trim().Replace("\r", "").Replace("\u0007", ""));
-                                
+                                //  Console.WriteLine(tc_step[column_name[j]]);
 
                             }
-                             h["test steps"]+=(new JavaScriptSerializer().Serialize(tc_step))+",";
-                              
 
-                         }//处理tc_step
-                          h["test steps"]="["+h["test steps"].ToString().Substring(0, h["test steps"].ToString().Length-1)+"]";
-                     }//else if 
-                 }//for row
+                            h["test steps"] += (new JavaScriptSerializer().Serialize(tc_step)) + ",";
 
-                 aaa.finalstrings.Add(h);
 
-                }//for tables
+                        }//处理tc_step
+                        h["test steps"] = "[" + h["test steps"].ToString().Substring(0, h["test steps"].ToString().Length - 1) + "]";
+                    }//else if 
+                }//for row
 
-                 
-            }
+                aaa.final_tc.Add(h);
 
- 
+            }//for tables
 
+
+        }
 
 
 
@@ -756,163 +425,237 @@ namespace WebApplication2
 
 
 
-       
+
+
+
+
         [WebMethod(Description = "readtc")]
-        public  string  resolve(string column, string type, string doc_url = "http://127.0.0.1/casco-api/public/files/tcs.doc")
+        public string resolve()
         {
-            String LocalPath=null;
-            try
-            {   
-                LocalPath = root+ doc_url.Substring(doc_url.LastIndexOf('/'));
-                Uri u = new Uri(doc_url);
-                
-                HttpWebRequest mRequest = (HttpWebRequest)WebRequest.Create(u);
-                mRequest.Method = "GET";
-                mRequest.ContentType = "application/x-www-form-urlencoded";
-                HttpWebResponse wr = (HttpWebResponse)mRequest.GetResponse();
-                Stream sIn = wr.GetResponseStream();
-                FileStream fs = new FileStream(LocalPath, FileMode.Create, FileAccess.Write);
-                byte[] bytes = new byte[4096];
-                int start = 0;
-                int length;
-                while ((length = sIn.Read(bytes, 0, 4096)) > 0)
-                {
-                    fs.Write(bytes, 0, length);
-                    start += length;
-                }
-                sIn.Close();
-                wr.Close();
-                fs.Close();
+
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            string param = System.Web.HttpUtility.UrlDecode(HttpContext.Current.Request.Url.Query.ToString().Substring(1));
+            string[] param_s = param.Split('&'); Hashtable key_values = new System.Collections.Hashtable(); ;
+            foreach (string item in param_s)
+            {
+                string[] key_value = item.Split('=');
+                //  this.GetType().GetField(key_value[0]).GetValue(key_value[1]).ToString();
+                key_values.Add(key_value[0], key_value[1]);
             }
-            catch { }
-            if (!File.Exists(LocalPath)) { return "{code:0,msg:保存文件失败！=>"+doc_url+"}";  }
-          
-            in_column = column;
-            //WORD  中数据都规整为一个空格隔开来
-            columns = column.Split(',');
-           
-                _Application app = new Microsoft.Office.Interop.Word.Application();
-         /*       _Application app1= new Microsoft.Office.Interop.Word.Application();
-                _Application app2= new Microsoft.Office.Interop.Word.Application();
-                _Application app3= new Microsoft.Office.Interop.Word.Application();
-                _Application app4= new Microsoft.Office.Interop.Word.Application();
-                _Application app5= new Microsoft.Office.Interop.Word.Application();
-                _Application app6= new Microsoft.Office.Interop.Word.Application();
-                _Application app7= new Microsoft.Office.Interop.Word.Application();
-          */
-             
-                object fileName =LocalPath;
+
+
+            String LocalPath = null;
+            string column = key_values.ContainsKey("column") ? key_values["column"].ToString() : "", type = key_values.ContainsKey("type") ? key_values["type"].ToString() : "", doc_url = key_values.ContainsKey("doc_url") ? key_values["doc_url"].ToString() : "";
+            if (column.Equals("") || type.Equals("") || doc_url.Equals(""))
+                throw new Exception("输入参数不合法");
+            //  return column;  
+
+            string message = null;
+            try
+            {
+                String savePath = downfile(doc_url);
+
+                //不需要此步判断了 if (!File.Exists(savePath)) throw new Exception("保存文件失败" ）; 
+
+                in_column = column;
+                //WORD  中数据都规整为一个空格隔开来
+                columns = column.Split(',');
+
+
+                /*
+                    _Application app2= new Microsoft.Office.Interop.Word.Application();
+                    _Application app3= new Microsoft.Office.Interop.Word.Application();
+                    _Application app4= new Microsoft.Office.Interop.Word.Application();
+                    _Application app5= new Microsoft.Office.Interop.Word.Application();
+                    _Application app6= new Microsoft.Office.Interop.Word.Application();
+                    _Application app7= new Microsoft.Office.Interop.Word.Application();
+                
+             */
+                object fileName = savePath;
 
                 object unknow = System.Type.Missing;
-               
-               //目前一个线程再跑
-                doc = app.Documents.Open(ref fileName,
-                    ref unknow, true, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);//input a doc
-         /*       doc1 = app1.Documents.Open(ref fileName,
-                   ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                   ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                   ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);//input a doc
-                doc2 = app2.Documents.Open(ref fileName,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);//input a doc
-                doc3 = app3.Documents.Open(ref fileName,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);//input a doc
-                doc4 = app4.Documents.Open(ref fileName,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);//input a doc
-                doc5 = app5.Documents.Open(ref fileName,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);//input a doc
-                doc6 = app6.Documents.Open(ref fileName,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);//input a doc
-                doc7 = app7.Documents.Open(ref fileName,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
-                    ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);//input a doc
-          * */
-                pcount = doc.Paragraphs.Count;//count the paragraphs
-                int jjj = pcount;
+
+                //目前一个线程再跑
+                if (type == "rs") { delet_tables(savePath); }
+
+                //count the paragraphs
 
                 if (type == "rs")
                 {
                     //然后完成对文档的解析
 
-             
-                var t1 = new System.Threading.Tasks.Task(() => thread1());
-             /*   var t2 = new System.Threading.Tasks.Task(() => thread1());
-                var t3 = new System.Threading.Tasks.Task(() => thread1());
-                var t4 = new System.Threading.Tasks.Task(() => thread1());
-                var t5 = new System.Threading.Tasks.Task(() => thread1());
-                var t6 = new System.Threading.Tasks.Task(() => thread1());
-                var t7 = new System.Threading.Tasks.Task(() => thread1());
-                var t8 = new System.Threading.Tasks.Task(() => thread1());
-                t1.Start();
-                t2.Start();
-                t3.Start();
-                t4.Start();
-                t5.Start();
-                t6.Start();
-                t7.Start();
-                t8.Start();
-              * */
-                t1.Start();
-                System.Threading.Tasks.Task.WaitAll(t1);//, t2, t3, t4, t5, t6, t7, t8);
+                    List<System.Threading.Tasks.Task> TaskList = new List<System.Threading.Tasks.Task>();
+                    // 开启线程池,线程分配算法
+                    System.Threading.Tasks.Task t = null;
+                    int k = (int)Math.Ceiling((Double)slice / doc_handler);
+                    for (int i = 0; i < doc_handler; i++)
+                    {
+                        Microsoft.Office.Interop.Word.Application app_in = new Microsoft.Office.Interop.Word.Application();
+                        var doc1 = app_in.Documents.Open(ref fileName, ref unknow, true, ref unknow, ref unknow, ref unknow, ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
+                        ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);
+                        pcount = doc1.Paragraphs.Count;
+                        docs_list[i] = (doc1);
+                        apps_list[i] = (app_in);
+
+                        int block = (int)Math.Ceiling((Double)pcount / slice);
+                        for (int j = i * k + 1; j <= (i + 1) * k && j <= slice; j++)
+                        {
+
+                            //Debug.WriteLine("传入{0},{1}", pcount * (i) / slice + 1 - key_line, pcount * (i + 1) / slice + key_line);
+                            int start_in = block * (j - 1) + 1 - key_line <= 0 ? 1 : block * (j - 1) + 1 - key_line, end_in = block * (j) + key_line >= pcount ? pcount : block * (j) + key_line;
+                            Debug.WriteLine("outside{0}=>{1},{2}", doc1.GetHashCode(), start_in, end_in);
+                            t = new System.Threading.Tasks.Task(() => thread1(doc1, start_in, end_in));//, ref aaa.finals[i]));
+                            t.Start();
+                            TaskList.Add(t);
+                        }
+                    }
+
+
+
+                    /*     
+                         var t1 = new System.Threading.Tasks.Task(() => thread1(1,pcount/8+key_line, map[0]));
+                         var t2 = new System.Threading.Tasks.Task(() => thread1(pcount / 8 + 1 - key_line, pcount * 2 / 8 + key_line,  map[1]));
+                         var t3 = new System.Threading.Tasks.Task(() => thread1(pcount * 2 / 8 + 1 - key_line, pcount * 3 / 8 + key_line,  map[2]));
+                         var t4 = new System.Threading.Tasks.Task(() => thread1(pcount * 3 / 8 + 1 - key_line, pcount * 4 / 8 + key_line,  map[3]));
+                         var t5 = new System.Threading.Tasks.Task(() => thread1(pcount * 4 / 8 + 1 - key_line, pcount * 5 / 8 + key_line,  map[4]));
+                         var t6 = new System.Threading.Tasks.Task(() => thread1(pcount * 5 / 8 + 1 - key_line, pcount * 6 / 8 + key_line,  map[5]));
+                         var t7 = new System.Threading.Tasks.Task(() => thread1(pcount * 6 / 8 + 1 - key_line, pcount * 7 / 8 + key_line,  map[6]));
+                         var t8 = new System.Threading.Tasks.Task(() => thread1(pcount * 7 / 8 + 1 - key_line, pcount * 8 / 8 + key_line,  map[7]));
+                         t1.Start(); TaskList.Add(t1);
+                         t2.Start(); TaskList.Add(t2);
+                         t3.Start(); TaskList.Add(t3);
+                         t4.Start(); TaskList.Add(t4);
+                         t5.Start(); TaskList.Add(t5);
+                         t6.Start(); TaskList.Add(t6);
+                         t7.Start(); TaskList.Add(t7);
+                         t8.Start(); TaskList.Add(t8);
+                 
+                 */
+
+                    System.Threading.Tasks.Task.WaitAll(TaskList.ToArray());//t1, t2, t3, t4, t5, t6, t7, t8);
+                    var json = new JavaScriptSerializer().Serialize(aaa.finalstrings.Where((x, i) => aaa.finalstrings.FindIndex(z => z["tag"] == x["tag"]) == i).ToList());
+                    message = json;// "{\"success\":true,\"msg\":" + (new JavaScriptSerializer().Serialize(json)) + "}";
+
                 }//rs
                 else if (type == "tc")
                 {
 
-                    var t1 = new System.Threading.Tasks.Task(() => readtc());
-                    t1.Start();
-                    System.Threading.Tasks.Task.WaitAll(t1);
+                    //tc并发并没有什么问题
+
+
+                    List<System.Threading.Tasks.Task> TaskList = new List<System.Threading.Tasks.Task>();
+
+                    int k = (int)Math.Ceiling((Double)slice / doc_handler);
+                    Debug.WriteLine("buchang {0}", k);
+                    for (int i = 0; i < doc_handler; i++)
+                    {
+                        Microsoft.Office.Interop.Word.Application app_in = new Microsoft.Office.Interop.Word.Application();
+                        var doc1 = app_in.Documents.Open(ref fileName, ref unknow, true, ref unknow, ref unknow, ref unknow, ref unknow, ref unknow, ref unknow, ref unknow, ref unknow,
+                        ref unknow, ref unknow, ref unknow, ref unknow, ref unknow);
+                        pcount = doc1.Tables.Count;
+                        docs_list[i] = (doc1);
+                        apps_list[i] = (app_in);
+                        int block = (int)Math.Ceiling((Double)pcount / slice);
+
+                        for (int j = i * k + 1; j <= (i + 1) * k && j <= slice; j++)
+                        {
+                            //Debug.WriteLine("传入{0},{1}", pcount * (i) / slice + 1 - key_line, pcount * (i + 1) / slice + key_line);
+
+                            int start_in = block * (j - 1) + 1 <= 0 ? 1 : block * (j - 1) + 1, end_in = block * (j) >= pcount ? pcount : block * (j);
+                            Debug.WriteLine("outside {0},{1}", start_in, end_in);
+                            System.Threading.Tasks.Task t = new System.Threading.Tasks.Task(() => readtc(doc1, start_in, end_in));
+                            t.Start();
+                            TaskList.Add(t);
+                        }
+                    }
+
+
+
+
+                    System.Threading.Tasks.Task.WaitAll(TaskList.ToArray());
+                    var json = new JavaScriptSerializer().Serialize(aaa.final_tc);
+                    //(new HashSet<Dictionary<string, object>>(aaa.final_tc)));
+                    message = json;// "{\"success\":true,\"msg\":" + (new JavaScriptSerializer().Serialize(json)) + "}";
+
 
 
                 }
 
-                doc.Close(ref unknow, ref unknow, ref unknow);
 
-              /*  doc1.Close(ref unknow, ref unknow, ref unknow);
+            }
 
-                doc2.Close(ref unknow, ref unknow, ref unknow);
+            catch (Exception e)
+            {
 
-                doc3.Close(ref unknow, ref unknow, ref unknow);
+                message = e.ToString();//
+                // "{\"success\":false,\"msg\":\"" + e.Message + e.StackTrace + e.TargetSite + "\"}";
 
-                doc4.Close(ref unknow, ref unknow, ref unknow);
+                return message;
 
-                doc5.Close(ref unknow, ref unknow, ref unknow);
 
-                doc6.Close(ref unknow, ref unknow, ref unknow);
+            }
 
-                doc7.Close(ref unknow, ref unknow, ref unknow);
-*/
-                app.Quit(ref unknow, ref unknow, ref unknow);
-           /*     app1.Quit(ref unknow, ref unknow, ref unknow);
-                app2.Quit(ref unknow, ref unknow, ref unknow);
-                app3.Quit(ref unknow, ref unknow, ref unknow);
-                app4.Quit(ref unknow, ref unknow, ref unknow);
-                app5.Quit(ref unknow, ref unknow, ref unknow);
-                app6.Quit(ref unknow, ref unknow, ref unknow);
-                app7.Quit(ref unknow, ref unknow, ref unknow);
-            */
-             
-                
-                var json = new JavaScriptSerializer().Serialize(aaa.finalstrings);
-                return  json;
+            finally
+            {
+                stopwatch.Stop();
+
+                //  return  json;
+
+                //异不异常到最后都关闭文档,避免word一直处于打开状态占用资源
+                object unknows = System.Type.Missing;
+                Debug.WriteLine("打开大小为{0}", docs_list.Length);
+                //   if (doc != null) doc.Close();
+                for (int i = 0; i < docs_list.Length; i++)
+                {
+                    if (docs_list[i] == null) { break; } Debug.WriteLine("开始close"); docs_list[i].Close(ref unknows, ref unknows, ref unknows); Debug.WriteLine("结束close");
+                }
+                for (int i = 0; i < apps_list.Length; i++)
+                {
+
+                    if (apps_list[i] == null) { break; } Debug.WriteLine("开始quit"); apps_list[i].Quit(ref unknows, ref unknows, ref unknows); Debug.WriteLine("结束quit");
+                }
+
+                GC.Collect();
+                GC.Collect();
                 Context.Response.ContentType = "text/json";
-                Context.Response.Write(json);
-                Context.Response.End();
-               
-                GC.Collect();
-                GC.Collect();
+                // Context.Response.Write(stopwatch.Elapsed);
+                Context.Response.Write(message);
+                // Context.Response.Write(json);
 
+                Context.Response.End();
+                /*  doc1.Close(ref unknow, ref unknow, ref unknow);
+                 foreach (_Application apps in apps_list)
+                  doc2.Close(ref unknow, ref unknow, ref unknow);
+
+                  doc3.Close(ref unknow, ref unknow, ref unknow);
+
+                  doc4.Close(ref unknow, ref unknow, ref unknow);
+
+                  doc5.Close(ref unknow, ref unknow, ref unknow);
+
+                  doc6.Close(ref unknow, ref unknow, ref unknow);
+
+                  doc7.Close(ref unknow, ref unknow, ref unknow);
+    */
+
+                /*     app1.Quit(ref unknow, ref unknow, ref unknow);
+                     app2.Quit(ref unknow, ref unknow, ref unknow);
+                     app3.Quit(ref unknow, ref unknow, ref unknow);
+                     app4.Quit(ref unknow, ref unknow, ref unknow);
+                     app5.Quit(ref unknow, ref unknow, ref unknow);
+                     app6.Quit(ref unknow, ref unknow, ref unknow);
+                     app7.Quit(ref unknow, ref unknow, ref unknow);
+                 */
+
+
+
+
+
+
+
+            }//finally
+            return null;//不是正常请求方式,不可见这结果
         }
 
 
