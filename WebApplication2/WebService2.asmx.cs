@@ -36,61 +36,21 @@ namespace WebApplication2
     // [System.Web.Script.Services.ScriptService]
     public class WebService2 : System.Web.Services.WebService
     {
-        /*
-        class Dictionary : IEquatable<Dictionary>
-        {
-            public bool Equals(Dictionary other)
-            {
-                return this.tag == other.tag;
-            }
-
-         }
-         * */
-        _Application app = new Microsoft.Office.Interop.Word.Application();
-        public _Document doc;
-        public _Document doc1;
-        public _Document doc2;
-        public _Document doc3;
-        public _Document doc4;
-        public _Document doc5;
-        public _Document doc6;
-        public _Document doc7;
         public string in_column;
-        //各自的map体，互相独立开来
-
         public static ManagementObjectCollection mn = (new ManagementClass("Win32_Processor")).GetInstances();
-
-        public Dictionary<string, string>[] map = new Dictionary<string, string>[25];
-        public Dictionary<string, object>[] h = new Dictionary<string, object>[25];
         public static int doc_handler = 8;//总句柄
         public static int slice = 16;//线程数目
         int key_line = 25;//最大rs记录的block块长
         _Document[] docs_list = new _Document[25];
         _Application[] apps_list = new Microsoft.Office.Interop.Word.Application[25];
-        public Dictionary<string, string> map1;
-        public Dictionary<string, string> map2;
-        Dictionary<string, string> map3;
-        Dictionary<string, string> map4;
-        Dictionary<string, string> map5;
-        Dictionary<string, string> map6;
-        Dictionary<string, string> map7;
-        Dictionary<string, string> map8;
-        Dictionary<string, object> h1;
-        Dictionary<string, object> h2;
-        Dictionary<string, object> h3;
-        Dictionary<string, object> h4;
-        Dictionary<string, object> h5;
-        Dictionary<string, object> h6;
-        Dictionary<string, object> h7;
-        Dictionary<string, object> h8;
         public int pcount;
         public int tc_count;
         public string[] columns;
-        public string root = "D:\\files\\words\\";//文件保存的路径;
-        //public string root = "E:\\files\\";
-
-
-
+        //  public string root = "D:\\files\\words\\";//文件保存的路径;
+        public string root = "E:\\files\\words\\";
+        public string OfficeFilePath = "E:\\files\\office\\";//"D://pdf/office/";// "D://pdf/office/";
+        public string PdfFilePath = "E:\\files\\pdfs\\";//"D://pdf/pdf/";
+        public string SWFFilePath = "E:\\files\\swfs\\";//"D://pdf/swf/";
         public class finaljson
         {
 
@@ -141,16 +101,13 @@ namespace WebApplication2
             string fileNameWithoutEx = System.IO.Path.GetFileNameWithoutExtension(PdfName);//不包含路径，不包含扩展名
             string extendName = System.IO.Path.GetExtension(PdfName).ToLower();//文件扩展名
             string saveName = destPath + fileNameWithoutEx + ".swf";
-            string returnValue = fileNameWithoutEx + ".swf"; ;
+            string returnValue = fileNameWithoutEx + ".swf";
             Util.PDFToSWF(pdf2swfPath, fullPathName, saveName);
             return returnValue;
         }
         public string showwordfiles(string filename)
         {
             string pdf2swfToolPath = System.Web.HttpContext.Current.Server.MapPath("~/FlexPaper/pdf2swf.exe");
-            string OfficeFilePath = "D://pdf/office/";
-            string PdfFilePath = "D://pdf/pdf/";
-            string SWFFilePath = "D://pdf/swf/";
             string SwfFileName = String.Empty;
             string UploadFileName = System.IO.Path.GetFileNameWithoutExtension(filename) + ".doc";
             string UploadFileType = System.IO.Path.GetExtension(UploadFileName).ToLower();
@@ -187,12 +144,9 @@ namespace WebApplication2
 
         public void thread1(Document doc, int start, int end)//,ref List<Dictionary<string, string>> finalstrings)
         {
-
-
             string temp = null;
             // int start = 1;
-            //int end = pcount;
-
+            //int end = pcount
             if (start <= 0) start = 1;
             if (end >= pcount) end = pcount;
             Dictionary<string, string> map = null;
@@ -200,9 +154,6 @@ namespace WebApplication2
             Debug.WriteLine("inside {0}=>{1},{2}", doc.GetHashCode(), start, end);
             while (start <= end)
             {
-
-
-
                 temp = doc.Paragraphs[start].Range.Text.Trim();
 
 
@@ -214,10 +165,7 @@ namespace WebApplication2
                 {
                     if (Regex.Matches(temp, @"^#.*?=.*?").Count > 0)
                     {
-
-
                         //大小写的问题尚未解决呢
-
                         Match mark = Regex.Match(temp, @"^#([^=]*?)=(.*?)$", RegexOptions.IgnoreCase);
                         // aaa.finalstrings.Add(  mark.Groups[1].Value+mark.Groups[2].Value);
                         if (Regex.Matches(in_column, mark.Groups[1].ToString().Trim(), RegexOptions.IgnoreCase).Count > 0)
@@ -249,13 +197,6 @@ namespace WebApplication2
                 }//else map1==null
                 else { }
                 start++;
-
-
-
-
-
-
-
             }//while
 
 
@@ -322,11 +263,12 @@ namespace WebApplication2
                 // aaa.finalstrings.Add(columns.ToString());
                 h = new Dictionary<string, object>();
                 h.Add("tag", tsp_mark.Match(nowTable.Cell(1, 2).Range.Text.Trim()).Groups[1].Value);
+                Dictionary<string, string> tc_2step = null; h["test steps"] = null;
                 for (int rowPos = 1; rowPos <= nowTable.Rows.Count; rowPos++)
                 {  //还要把中文给去掉,以及纵向合并的单元格
 
 
-                    string flag = Regex.Match(nowTable.Rows[rowPos].Cells[1].Range.Text.Trim().ToLower().Replace("\r", "").Replace("\u0007", ""), @"[\u4e00-\u9fa5\/]*(.*)?", RegexOptions.IgnoreCase).Groups[1].Value;//,@"\w",RegexOptions.IgnoreCase).Groups[0].Value.Trim();
+                    string flag = Regex.Match(nowTable.Cell(rowPos,1).Range.Text.Trim().ToLower().Replace("\r", "").Replace("\u0007", ""), @"[\u4e00-\u9fa5\/]*(.*)?", RegexOptions.IgnoreCase).Groups[1].Value;//,@"\w",RegexOptions.IgnoreCase).Groups[0].Value.Trim();
                     string[] flags = flag.Split(new char[] { ' ' });
                     flag = string.Join(" ", flags);
                     //   aaa.finalstrings.Add(flag);
@@ -336,39 +278,66 @@ namespace WebApplication2
                         if (a.ToLower().Trim() == flag) { mark = true; break; }
 
                     }
-
+                    
                     //aaa.finalstrings.Add(flag);
 
                     if (mark && nowTable.Rows[rowPos].Cells.Count == 2)
                     {
-
                         string text = nowTable.Rows[rowPos].Cells[2].Range.Text.Trim().Replace("\r", "").Replace("\u0007", "");
                         //  aaa.finalstrings.Add(flag + "haha here" + nowTable.Rows[rowPos].Cells[1].Range.Text.Trim().Replace("\r", "").Replace("\u0007", ""));
-                        if (rowPos != 1) { h.Add(flag, text); continue; }
-                        //此时要解析出description,source,safety
-                        h.Add("Source", null);
-                        MatchCollection matches = Regex.Matches(text, @"\[Source:([^\]]*?\])\]", RegexOptions.IgnoreCase);
-                        foreach (Match match in matches)
+                       // Dictionary<string, string> tc_step = null; h["test steps"] = null;
+                        switch (flag)
                         {
-                            GroupCollection groups = match.Groups;
-                            h["Source"] = h.ContainsKey("Source") ? (h["Source"] += (groups[1].ToString() + ",")) : null;
+                            case "execution step":
+                                tc_2step = new Dictionary<string, string>();
+                                tc_2step.Add("num" ,"1");
+                                tc_2step.Add("actions", text);
+                                Debug.WriteLine("{2},{0},{1}", tc_2step, h["test steps"], rowPos);
+                                break;
+                            case "expected output":
+                                if (tc_2step != null)
+                                {
+                                    tc_2step.Add("expected result", text);
+                                h["test steps"] += (new JavaScriptSerializer().Serialize(tc_2step)); tc_2step = null;
+                                h["test steps"] = "[" + h["test steps"].ToString() + "]";
+                                }
+                                break;
+                            default:
+                                if (rowPos != 1) { h.Add(flag, text); continue; }
+                                h.Add("Source", null);
+                                MatchCollection matches = Regex.Matches(text, @"\[Source:([^\]]*?\])\]", RegexOptions.IgnoreCase);
+                                foreach (Match match in matches)
+                                {
+                                    GroupCollection groups = match.Groups;
+                                    h["Source"] = h.ContainsKey("Source") ? (h["Source"] += (groups[1].ToString() + ",")) : null;
 
-                            // h.Add((i++).ToString(), groups[1].Value);
+                                    // h.Add((i++).ToString(), groups[1].Value);
+                                }
+
+                                if (h["Source"] != null) h["Source"] = h["Source"].ToString().Substring(0, h["Source"].ToString().Length - 1);
+                                Match match_safety = Regex.Match(text, @"\[Safety:([^\]]*?)\]", RegexOptions.IgnoreCase);
+                                if (match_safety.Success) h.Add("Safety", match_safety.Groups[1].Value);
+                                Match match_desc = Regex.Match(text, @"\]([^\[\]]*)\[", RegexOptions.IgnoreCase);
+                                if (match_desc.Success) { h.Add(flag, match_desc.Groups[1].Value); }
+                                break;
                         }
-
-                        if (h["Source"] != null) h["Source"] = h["Source"].ToString().Substring(0, h["Source"].ToString().Length - 1);
-                        Match match_safety = Regex.Match(text, @"\[Safety:([^\]]*?)\]", RegexOptions.IgnoreCase);
-                        if (match_safety.Success) h.Add("Safety", match_safety.Groups[1].Value);
-                        Match match_desc = Regex.Match(text, @"\]([^\[\]]*)\[", RegexOptions.IgnoreCase);
-                        if (match_desc.Success) { h.Add(flag, match_desc.Groups[1].Value); }
-
-
+                        //此时要解析出description,source,safety
                     }
-                    else if (mark && nowTable.Rows[rowPos].Cells.Count > 2)
+                    else if (mark&& nowTable.Rows[rowPos].Cells.Count > 2)//不要后面因为合并单元格
                     {
                         //处理tc_test的情况了的
                         //收集列名字
-                        //   aaa.finalstrings.Add(flag + "tc_step here" + in_column.Trim());
+                        /*   aaa.finalstrings.Add(flag + "tc_step here" + in_column.Trim());
+                          for (int start = rowPos + 1; start < nowTable.Rows.Count; start++)
+                        {
+
+                            if (nowTable.Rows[start].Cells.Count != num)
+                            {
+                                rowPos = start - 1; break;
+                            }
+                          }
+                        nowTable.Rows[rowPos].Cells[i].M
+                         * */
                         int num = nowTable.Rows[rowPos].Cells.Count;
                         string[] column_name = new string[num + 1];
 
@@ -380,7 +349,7 @@ namespace WebApplication2
 
                         }
                         column_name[0] = nowTable.Rows[rowPos].Range.Text.ToString();
-
+                        //column_name[1] = "Actions"; column_name[2] = "Expected Result";
                         Console.WriteLine(nowTable.Rows[rowPos].Cells[num].Range.Text);
                         //  column_name[1]="num";
                         h["test steps"] = null;
@@ -393,6 +362,7 @@ namespace WebApplication2
                             {
                                 rowPos = start - 1; break;
                             }
+
                             Dictionary<string, string> tc_step = new Dictionary<string, string>();
                             int j;
                             for (j = 1; j <= num; j++)
@@ -455,23 +425,12 @@ namespace WebApplication2
             try
             {
                 String savePath = downfile(doc_url);
-
+                //  string pdfpath = showwordfiles(savePath);
                 //不需要此步判断了 if (!File.Exists(savePath)) throw new Exception("保存文件失败" ）; 
 
                 in_column = column;
                 //WORD  中数据都规整为一个空格隔开来
                 columns = column.Split(',');
-
-
-                /*
-                    _Application app2= new Microsoft.Office.Interop.Word.Application();
-                    _Application app3= new Microsoft.Office.Interop.Word.Application();
-                    _Application app4= new Microsoft.Office.Interop.Word.Application();
-                    _Application app5= new Microsoft.Office.Interop.Word.Application();
-                    _Application app6= new Microsoft.Office.Interop.Word.Application();
-                    _Application app7= new Microsoft.Office.Interop.Word.Application();
-                
-             */
                 object fileName = savePath;
 
                 object unknow = System.Type.Missing;
@@ -515,20 +474,6 @@ namespace WebApplication2
 
                     /*     
                          var t1 = new System.Threading.Tasks.Task(() => thread1(1,pcount/8+key_line, map[0]));
-                         var t2 = new System.Threading.Tasks.Task(() => thread1(pcount / 8 + 1 - key_line, pcount * 2 / 8 + key_line,  map[1]));
-                         var t3 = new System.Threading.Tasks.Task(() => thread1(pcount * 2 / 8 + 1 - key_line, pcount * 3 / 8 + key_line,  map[2]));
-                         var t4 = new System.Threading.Tasks.Task(() => thread1(pcount * 3 / 8 + 1 - key_line, pcount * 4 / 8 + key_line,  map[3]));
-                         var t5 = new System.Threading.Tasks.Task(() => thread1(pcount * 4 / 8 + 1 - key_line, pcount * 5 / 8 + key_line,  map[4]));
-                         var t6 = new System.Threading.Tasks.Task(() => thread1(pcount * 5 / 8 + 1 - key_line, pcount * 6 / 8 + key_line,  map[5]));
-                         var t7 = new System.Threading.Tasks.Task(() => thread1(pcount * 6 / 8 + 1 - key_line, pcount * 7 / 8 + key_line,  map[6]));
-                         var t8 = new System.Threading.Tasks.Task(() => thread1(pcount * 7 / 8 + 1 - key_line, pcount * 8 / 8 + key_line,  map[7]));
-                         t1.Start(); TaskList.Add(t1);
-                         t2.Start(); TaskList.Add(t2);
-                         t3.Start(); TaskList.Add(t3);
-                         t4.Start(); TaskList.Add(t4);
-                         t5.Start(); TaskList.Add(t5);
-                         t6.Start(); TaskList.Add(t6);
-                         t7.Start(); TaskList.Add(t7);
                          t8.Start(); TaskList.Add(t8);
                  
                  */
@@ -624,28 +569,9 @@ namespace WebApplication2
                 // Context.Response.Write(json);
 
                 Context.Response.End();
-                /*  doc1.Close(ref unknow, ref unknow, ref unknow);
-                 foreach (_Application apps in apps_list)
-                  doc2.Close(ref unknow, ref unknow, ref unknow);
-
-                  doc3.Close(ref unknow, ref unknow, ref unknow);
-
-                  doc4.Close(ref unknow, ref unknow, ref unknow);
-
-                  doc5.Close(ref unknow, ref unknow, ref unknow);
-
-                  doc6.Close(ref unknow, ref unknow, ref unknow);
-
-                  doc7.Close(ref unknow, ref unknow, ref unknow);
-    */
 
                 /*     app1.Quit(ref unknow, ref unknow, ref unknow);
-                     app2.Quit(ref unknow, ref unknow, ref unknow);
-                     app3.Quit(ref unknow, ref unknow, ref unknow);
-                     app4.Quit(ref unknow, ref unknow, ref unknow);
-                     app5.Quit(ref unknow, ref unknow, ref unknow);
-                     app6.Quit(ref unknow, ref unknow, ref unknow);
-                     app7.Quit(ref unknow, ref unknow, ref unknow);
+               
                  */
 
 
