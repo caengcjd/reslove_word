@@ -3,3 +3,16 @@ C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslov
 C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\WebApplication2.dll
 C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\WebApplication2.pdb
 C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\WebApplication2.csprojResolveAssemblyReference.cache
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\WebApplication2.csprojFakesResolveAssemblyReference.cache
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\WebApplication2.csproj.ResolveComReference.cache
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\fakes.args
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\f.ah
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\f.ch
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\f.cs
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\f.csproj
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\f.fakes
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\f.fakesconfig
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\f.new.cs
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\f.snk
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\o\f.csproj.FileListAbsolute.txt
+C:\Users\beenquiver\Documents\Visual Studio 2012\Projects\WebApplication2\reslove_word\WebApplication2\obj\x86\Debug\Fakes\moiw\o\f.csprojResolveAssemblyReference.cache

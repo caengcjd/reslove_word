@@ -24,6 +24,7 @@ using System.Diagnostics;
 using System.Management.Instrumentation;
 using System.Management;
 
+
 namespace WebApplication2
 {
     /// <summary>
@@ -447,6 +448,7 @@ namespace WebApplication2
                     List<System.Threading.Tasks.Task> TaskList = new List<System.Threading.Tasks.Task>();
                     // 开启线程池,线程分配算法
                     System.Threading.Tasks.Task t = null;
+
                     int k = (int)Math.Ceiling((Double)slice / doc_handler);
                     for (int i = 0; i < doc_handler; i++)
                     {
